@@ -4,3 +4,4 @@
 .phpunit.result.cache
 *.log
 composer.lock
+guide*

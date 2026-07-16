@@ -19,6 +19,7 @@ use Bale\Gupa\Detectors\VelocityDetector;
 use Bale\Gupa\Middleware\GuardianMiddleware;
 use Bale\Gupa\Scorer\ScoreCalculator;
 use Bale\Gupa\Support\WhitelistChecker;
+use Illuminate\Support\Facades\Blade;
 use Illuminate\Support\ServiceProvider;
 
 class GupaServiceProvider extends ServiceProvider
@@ -43,6 +44,7 @@ class GupaServiceProvider extends ServiceProvider
         $this->registerPublishing();
         $this->registerMiddleware();
         $this->registerDetectors();
+        $this->registerViews();
 
         if ($this->app->runningInConsole()) {
             $this->registerCommands();
@@ -58,6 +60,12 @@ class GupaServiceProvider extends ServiceProvider
         $this->publishes([
             __DIR__ . '/../config/gupa.php' => config_path('gupa.php'),
         ], 'gupa:config');
+    }
+
+    private function registerViews(): void
+    {
+        $this->loadViewsFrom(__DIR__ . '/../resources/views', 'gupa');
+        Blade::anonymousComponentNamespace('gupa::components', 'gupa');
     }
 
     private function registerMiddleware(): void
