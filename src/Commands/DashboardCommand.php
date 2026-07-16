@@ -93,7 +93,9 @@ class DashboardCommand extends Command
         try {
             $redis = Cache::getStore()->getRedis();
             $connection = $redis->connection();
-            $keys = $connection->keys($prefix);
+            $cachePrefix = config('cache.prefix', '');
+            $fullPrefix = $cachePrefix ? $cachePrefix . ':' . $prefix : $prefix;
+            $keys = $connection->keys($fullPrefix);
 
             return is_array($keys) ? count($keys) : 0;
         } catch (\Throwable) {

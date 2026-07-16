@@ -52,6 +52,51 @@ php artisan gupa:whitelist --add=10.0.0.0/8
 php artisan gupa:blacklist --add=1.2.3.4
 ```
 
+## Try It
+
+### 1. Cek status
+
+```bash
+php artisan gupa:dashboard
+```
+
+### 2. Simulasi bot — kirim request dengan curl
+
+```bash
+# Normal request (akan lolos)
+curl -I https://yourdomain.com
+
+# Bot-like request (akan kena score)
+curl -I -A "python-requests/2.28" https://yourdomain.com
+
+# Bot dengan missing headers
+curl -I -H "Accept:" -H "Accept-Language:" https://yourdomain.com
+```
+
+### 3. Cek score naik
+
+```bash
+php artisan gupa:dashboard --json
+```
+
+### 4. Force block IP sendiri (untuk testing)
+
+```bash
+# Tambah ke blacklist
+php artisan gupa:blacklist --add=YOUR_IP
+
+# Buka browser → akan dapat 403
+
+# Hapus dari blacklist
+php artisan gupa:blacklist --remove=YOUR_IP
+```
+
+### 5. Cek log
+
+```bash
+tail -f storage/logs/laravel.log | grep Gupa
+```
+
 ## License
 
 MIT
