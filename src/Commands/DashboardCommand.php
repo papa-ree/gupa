@@ -91,10 +91,12 @@ class DashboardCommand extends Command
     private function countViaRedis(string $prefix): int
     {
         try {
-            $redis = Cache::getStore()->getRedis();
+            $store = Cache::getStore();
+            $redisPrefix = method_exists($store, 'getPrefix') ? $store->getPrefix() : '';
+            $fullPrefix = $redisPrefix ? $redisPrefix . $prefix : $prefix;
+
+            $redis = $store->getRedis();
             $connection = $redis->connection();
-            $cachePrefix = config('cache.prefix', '');
-            $fullPrefix = $cachePrefix ? $cachePrefix . ':' . $prefix : $prefix;
             $keys = $connection->keys($fullPrefix);
 
             return is_array($keys) ? count($keys) : 0;
