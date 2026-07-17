@@ -158,6 +158,12 @@ class WhitelistChecker
         $configIps = config('gupa.whitelist.ips', []);
         $dynamicIps = Cache::get(self::WHITELIST_CACHE_KEY, []);
 
+        if ($this->useDatabase() && empty($dynamicIps)) {
+            $dynamicIps = \Bale\Gupa\Models\Whitelist::pluck('ip')
+                ->flip()
+                ->toArray();
+        }
+
         return array_merge(array_flip($configIps), $dynamicIps);
     }
 
@@ -165,6 +171,12 @@ class WhitelistChecker
     {
         $configIps = config('gupa.blacklist.ips', []);
         $dynamicIps = Cache::get(self::BLACKLIST_CACHE_KEY, []);
+
+        if ($this->useDatabase() && empty($dynamicIps)) {
+            $dynamicIps = \Bale\Gupa\Models\Blacklist::pluck('ip')
+                ->flip()
+                ->toArray();
+        }
 
         return array_merge(array_flip($configIps), $dynamicIps);
     }

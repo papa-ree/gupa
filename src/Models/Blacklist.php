@@ -20,13 +20,5 @@ class Blacklist extends Model
                 $model->id = (string) Str::uuid();
             }
         });
-
-        static::created(function () {
-            cache()->forget('gupa:blacklist');
-        });
-
-        static::deleted(function () {
-            cache()->forget('gupa:blacklist');
-        });
     }
 }

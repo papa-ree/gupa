@@ -20,13 +20,5 @@ class Whitelist extends Model
                 $model->id = (string) Str::uuid();
             }
         });
-
-        static::created(function () {
-            cache()->forget('gupa:whitelist');
-        });
-
-        static::deleted(function () {
-            cache()->forget('gupa:whitelist');
-        });
     }
 }
