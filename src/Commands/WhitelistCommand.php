@@ -31,6 +31,11 @@ class WhitelistCommand extends Command
     {
         $ip = $this->option('add');
 
+        if (in_array($ip, $whitelistChecker->getBlacklistedIps())) {
+            $whitelistChecker->unblacklist($ip);
+            $this->comment("  Removed {$ip} from blacklist (conflict resolved).");
+        }
+
         $whitelistChecker->whitelist($ip);
         $this->info("Added {$ip} to dynamic whitelist.");
 
