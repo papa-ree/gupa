@@ -1,45 +1,45 @@
-# Bale Gupa
+# Gupa
 
-> Intelligent IP protection, rate limiting, and bot detection for Laravel applications.
+> Perlindungan IP, rate limiting, dan deteksi bot untuk aplikasi Laravel.
 
-Gupa (from Sanskrit *gup* — to protect) is a comprehensive security layer that automatically scores incoming requests, blocks malicious actors, and provides real-time visibility into your application's threat landscape.
+Gupa (dari Sansekerta *gup* — melindungi) adalah lapisan keamanan komprehensif yang secara otomatis memberi skor pada setiap request, memblokir aktor jahat, dan menyediakan visibilitas real-time terhadap ancaman di aplikasi Anda.
 
-Part of the [Bale](https://github.com/bale) ecosystem. Works with any Laravel 11/12/13 project.
+Bagian dari ekosistem [Bale](https://github.com/bale). Dapat digunakan di proyek Laravel 11/12/13 mana pun.
 
-## Features
+## Fitur
 
-- **Behavioral Scoring Engine** — Multi-detector scoring system that evaluates every request in real-time
-- **5 Built-in Detectors** — Velocity, honeypot, HTTP headers, 404 flooding, rate limiting
-- **Automatic Blocking** — Temporary or permanent IP blocking with configurable thresholds
-- **Dual Storage** — Cache-only (Redis/file) or persistent (database) mode
-- **CIDR & Wildcard Support** — Whitelist/blacklist entire subnets or IP ranges
-- **Dynamic Blacklist/Whitelist** — Add or remove IPs at runtime via Artisan
-- **Suspicious Path Logging** — Logs request details when scores reach suspicious threshold
-- **Notifications** — Webhook and email alerts when IPs are blocked
-- **Dashboard & CLI** — Monitor, query, and manage everything from the command line
+- **Mesin Skor Perilaku** — Sistem multi-detektor yang mengevaluasi setiap request secara real-time
+- **5 Detektor Bawaan** — Velocity, honeypot, header HTTP, serangan 404, rate limiting
+- **Pemblokiran Otomatis** — Blocking IP sementara atau permanen dengan threshold yang dapat dikonfigurasi
+- **Dual Storage** — Mode cache-only (Redis/file) atau persistent (database)
+- **Dukungan CIDR & Wildcard** — Whitelist/blacklist seluruh subnet atau range IP
+- **Blacklist/Whitelist Dinamis** — Tambah atau hapus IP saat runtime melalui Artisan
+- **Logging Path Mencurigakan** — Mencatat detail request saat skor mencapai threshold suspicious
+- **Notifikasi** — Alert webhook dan email saat IP diblokir
+- **Dashboard & CLI** — Pantau, query, dan kelola semuanya dari command line
 
-## Requirements
+## Persyaratan
 
 - PHP ^8.3
-- Laravel 11, 12, or 13
+- Laravel 11, 12, atau 13
 
-## Installation
+## Instalasi
 
 ```bash
 composer require bale/gupa
 php artisan gupa:setup
 ```
 
-The setup wizard will guide you through mode selection:
+Wizard setup akan memandu Anda dalam pemilihan mode:
 
-| Mode | What it does |
-|------|-------------|
-| **Auto** (default) | Publishes config and env vars. Cache-only storage. |
-| **Advance** | Auto + database migrations + persistent storage. |
+| Mode | Yang dilakukan |
+|------|---------------|
+| **Auto** (default) | Publish config dan env vars. Storage cache-only. |
+| **Advance** | Auto + migrasi database + persistent storage. |
 
-## Quick Start
+## Mulai Cepat
 
-Register the middleware in `bootstrap/app.php`:
+Daftarkan middleware di `bootstrap/app.php`:
 
 ```php
 ->withMiddleware(function (Middleware $middleware) {
@@ -47,74 +47,74 @@ Register the middleware in `bootstrap/app.php`:
 })
 ```
 
-Enable in `.env`:
+Aktifkan di `.env`:
 
 ```env
 GUPA_ENABLED=true
 ```
 
-Every request is now protected automatically.
+Setiap request sekarang terlindungi secara otomatis.
 
-## How It Works
+## Cara Kerja
 
 ```
-Request → GuardianMiddleware → ScoreCalculator → Detectors → Score
+Request → GuardianMiddleware → ScoreCalculator → Detectors → Skor
                                                               │
                                             ┌─────────────────┤
                                             │                 │
-                                     score < threshold    score >= threshold
+                                     skor < threshold    skor >= threshold
                                             │                 │
                                          PASS            Block IP (403)
 ```
 
-Each detector independently evaluates the request and contributes a score. When the total score reaches the threshold, the IP is blocked.
+Setiap detektor secara independen mengevaluasi request dan memberikan kontribusi skor. Ketika total skor mencapai threshold, IP diblokir.
 
-### Detectors
+### Detektor
 
-| Detector | What it catches | Default Score |
-|----------|----------------|---------------|
-| **Velocity** | Excessive request rate | 30 |
-| **Honeypot** | Bot trap fields and hidden routes | 50 |
-| **Header** | Missing standard browser headers, known bots | 20 |
-| **NotFound** | Repeated 404 probing | 15 per hit |
-| **RateLimit** | Requests exceeding rate limit | 25 |
+| Detektor | Apa yang ditangkap | Skor Default |
+|----------|-------------------|--------------|
+| **Velocity** | Request rate berlebihan | 30 |
+| **Honeypot** | Field jebakan bot dan rute tersembunyi | 50 |
+| **Header** | Header browser standar hilang, bot yang dikenal | 20 |
+| **NotFound** | Pencarian 404 berulang | 15 per hit |
+| **RateLimit** | Request melebihi batas rate | 25 |
 
-## Configuration
+## Konfigurasi
 
-All settings live in `config/gupa.php` and can be overridden via `.env`:
+Semua pengaturan ada di `config/gupa.php` dan dapat di-override melalui `.env`:
 
 ```env
-# Core
+# Inti
 GUPA_ENABLED=true
-GUPA_THRESHOLD=100              # Total score to trigger block
-GUPA_SCORE_DECAY_WINDOW=300     # Seconds before score resets (5 min)
-GUPA_BLOCK_DURATION=3600        # Seconds for temporary block (1 hour)
+GUPA_THRESHOLD=100              # Total skor untuk trigger block
+GUPA_SCORE_DECAY_WINDOW=300     # Detik sebelum skor auto-reset (5 menit)
+GUPA_BLOCK_DURATION=3600        # Detik durasi block sementara (1 jam)
 GUPA_LOG_ENABLED=true
 
 # Storage
-GUPA_STORAGE=cache              # "cache" or "database"
+GUPA_STORAGE=cache              # "cache" atau "database"
 
-# Suspicious logging (database mode only)
-GUPA_SUSPICIOUS_THRESHOLD=10    # Log requests when score reaches this
-GUPA_LOG_RETENTION_DAYS=30      # Auto-prune logs older than this
+# Logging path mencurigakan (hanya database mode)
+GUPA_SUSPICIOUS_THRESHOLD=10    # Log request saat skor mencapai ini
+GUPA_LOG_RETENTION_DAYS=30      # Auto-prune log lebih lama dari ini
 
-# Notifications
+# Notifikasi
 GUPA_NOTIFY_WEBHOOK=false
 GUPA_NOTIFY_WEBHOOK_URL=
 GUPA_NOTIFY_EMAIL=false
 GUPA_NOTIFY_EMAIL_TO=
 ```
 
-## Storage Modes
+## Mode Storage
 
-| Mode | Backend | Pros | Cons |
-|------|---------|------|------|
-| **cache** | Redis / file | Zero DB overhead, fast | Lost on cache flush |
-| **database** | SQLite / MySQL / PostgreSQL | Persistent, queryable | Slight DB overhead |
+| Mode | Backend | Kelebihan | Kekurangan |
+|------|---------|-----------|------------|
+| **cache** | Redis / file | Tanpa beban DB, cepat | Hilang saat cache flush |
+| **database** | SQLite / MySQL / PostgreSQL | Persistent, dapat di-query | Sedikit beban DB |
 
-### Whitelist & Blacklist
+## Whitelist & Blacklist
 
-Static lists via config:
+List statis melalui config:
 
 ```php
 // config/gupa.php
@@ -128,34 +128,34 @@ Static lists via config:
 ],
 ```
 
-Dynamic lists via Artisan:
+List dinamis melalui Artisan:
 
 ```bash
-# Blacklist — immediately blocks (whitelist auto-removed if exists)
+# Blacklist — langsung blokir (whitelist otomatis dihapus jika ada)
 php artisan gupa:blacklist --add=1.2.3.4
 php artisan gupa:blacklist --add=10.0.0.0/8
 php artisan gupa:blacklist --remove=1.2.3.4
 php artisan gupa:blacklist --list
 
-# Whitelist — bypasses all detection (blacklist auto-removed if exists)
+# Whitelist — lewati semua deteksi (blacklist otomatis dihapus jika ada)
 php artisan gupa:whitelist --add=10.0.0.1
 php artisan gupa:whitelist --remove=10.0.0.1
 php artisan gupa:whitelist --list
 ```
 
-> Adding to blacklist auto-removes from whitelist, and vice versa.
+> Menambah ke blacklist otomatis menghapus dari whitelist, dan sebaliknya.
 
-## Artisan Commands
+## Perintah Artisan
 
 ```bash
 # Monitoring
-php artisan gupa:dashboard              # Real-time overview
-php artisan gupa:dashboard --json       # JSON output
-php artisan gupa:stats                  # Configuration summary
+php artisan gupa:dashboard              # Ikhtisar real-time
+php artisan gupa:dashboard --json       # Output JSON
+php artisan gupa:stats                  # Ringkasan konfigurasi
 
-# IP Management
-php artisan gupa:unblock 192.168.1.100  # Unblock a temporarily blocked IP
-php artisan gupa:clear-score 192.168.1.100  # Reset score without unblocking
+# Manajemen IP
+php artisan gupa:unblock 192.168.1.100  # Buka blokir IP sementara
+php artisan gupa:clear-score 192.168.1.100  # Reset skor tanpa unblock
 
 # Whitelist & Blacklist
 php artisan gupa:whitelist --add=10.0.0.1
@@ -166,97 +166,97 @@ php artisan gupa:blacklist --remove=1.2.3.4
 php artisan gupa:blacklist --list
 
 # Logging (database mode)
-php artisan gupa:log                        # Recent logs
-php artisan gupa:log --ip=1.2.3.4           # Filter by IP
-php artisan gupa:log --status=404           # Filter by status code
-php artisan gupa:log --event=block          # Filter by event type
-php artisan gupa:log --days=7               # Last N days
-php artisan gupa:log --prune                # Delete old logs
-php artisan gupa:log --json                 # JSON output
+php artisan gupa:log                        # Log terbaru
+php artisan gupa:log --ip=1.2.3.4           # Filter berdasarkan IP
+php artisan gupa:log --status=404           # Filter berdasarkan status code
+php artisan gupa:log --event=block          # Filter berdasarkan tipe event
+php artisan gupa:log --days=7               # 7 hari terakhir
+php artisan gupa:log --prune                # Hapus log lama
+php artisan gupa:log --json                 # Output JSON
 ```
 
-## Honeypot Component
+## Komponen Honeypot
 
-Embed a hidden trap field in your forms:
+Sembunyikan field jebakan di form Anda:
 
 ```blade
 <x-gupa::honeypot />
 
-{{-- Custom field name and action --}}
+{{-- Field name dan action custom --}}
 <x-gupa::honeypot fieldName="email_backup" action="{{ route('contact.store') }}" />
 ```
 
-Bots that fill the hidden field are scored automatically.
+Bot yang mengisi field tersembunyi akan mendapat skor secara otomatis.
 
-## Try It
+## Coba Sendiri
 
-### 1. Check status
+### 1. Cek status
 
 ```bash
 php artisan gupa:dashboard
 ```
 
-### 2. Simulate a bot
+### 2. Simulasi bot
 
 ```bash
-# Normal request — passes through
+# Request normal — lolos
 curl -I https://yourdomain.com
 
-# Bot-like user agent — gets scored
+# User agent bot — kena skor
 curl -I -A "python-requests/2.28" https://yourdomain.com
 
-# Missing standard headers — gets scored
+# Header standar hilang — kena skor
 curl -I -H "Accept:" -H "Accept-Language:" https://yourdomain.com
 ```
 
-### 3. Check the score increase
+### 3. Cek skor naik
 
 ```bash
 php artisan gupa:dashboard --json
 ```
 
-### 4. Force block yourself (for testing)
+### 4. Force block diri sendiri (untuk testing)
 
 ```bash
-php artisan gupa:blacklist --add=YOUR_IP
-# Open browser → 403 Forbidden
+php artisan gupa:blacklist --add=IP_ANDA
+# Buka browser → 403 Forbidden
 
-php artisan gupa:blacklist --remove=YOUR_IP
-# Access restored
+php artisan gupa:blacklist --remove=IP_ANDA
+# Akses pulih
 ```
 
-### 5. Check logs
+### 5. Cek log
 
 ```bash
 tail -f storage/logs/laravel.log | grep Gupa
 ```
 
-## Architecture
+## Arsitektur
 
 ```
 packages/bale-gupa/
-├── config/gupa.php              # All configuration
-├── database/migrations/         # 4 migrations (database mode)
-├── resources/views/             # Honeypot Blade component
+├── config/gupa.php              # Semua konfigurasi
+├── database/migrations/         # 4 migrasi (database mode)
+├── resources/views/             # Komponen Blade honeypot
 ├── src/
 │   ├── Actions/                 # BlockAction, LogAction, NotifyAction
-│   ├── Commands/                # 8 Artisan commands
-│   ├── Detectors/               # 5 detectors (Velocity, Honeypot, Header, NotFound, RateLimit)
+│   ├── Commands/                # 8 perintah Artisan
+│   ├── Detectors/               # 5 detektor (Velocity, Honeypot, Header, NotFound, RateLimit)
 │   ├── Middleware/               # GuardianMiddleware (entry point)
 │   ├── Models/                  # BlockedIp, Log, Whitelist, Blacklist
-│   ├── Notifications/           # Webhook & Email channels
+│   ├── Notifications/           # Channel Webhook & Email
 │   ├── Scorer/                  # ScoreCalculator (orchestrator)
 │   └── Support/                 # WhitelistChecker (CIDR, wildcard, exact match)
-└── tests/                       # 118 tests (Pest)
+└── tests/                       # 118 tes (Pest)
 ```
 
-## Testing
+## Pengujian
 
 ```bash
 cd packages/bale-gupa
 composer test
 ```
 
-## License
+## Lisensi
 
 MIT
