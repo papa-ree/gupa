@@ -3,6 +3,8 @@
 namespace Bale\Gupa\Commands;
 
 use Illuminate\Console\Command;
+use Illuminate\Database\QueryException;
+use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\File;
 
 class SetupCommand extends Command
@@ -18,11 +20,12 @@ class SetupCommand extends Command
         $this->basePath = base_path();
 
         $this->info('');
-        $this->info('  ____                 _ ');
-        $this->info(' / ___| ___  _ __   __| |');
-        $this->info('| |  _ / _ \| \'_ \ / _` |');
-        $this->info('| |_| | (_) | | | | (_| |');
-        $this->info(' \____|\___/|_| |_|\__,_|');
+        $this->info(' ____            _                    ____                 _ ');
+        $this->info('|  _ \  __ _ ___| |_ ___  _ __ _   _ / ___| ___  _ __   __| |');
+        $this->info('| |_) |/ _` / __| __/ _ \| \'__| | | | |  _ / _ \| \'_ \ / _` |');
+        $this->info('|  __/| (_| \__ \ || (_) | |  | |_| | |_| | (_) | | | | (_| |');
+        $this->info('|_|    \__,_|___/\__\___/|_|   \__, |\____|\___/|_| |_|\__,_|');
+        $this->info('                               |___/                         ');
         $this->newLine();
 
         $mode = $this->choice(
@@ -86,6 +89,12 @@ class SetupCommand extends Command
         $this->newLine();
 
         $this->line('<comment>[5/' . $total . ']</comment> Running migrations...');
+        if (!$this->checkDatabaseConnection()) {
+            $this->warn('  Migration dilewati — periksa koneksi database Anda.');
+            $this->newLine();
+
+            return $this->finishAdvanceSkipped();
+        }
         $this->call('migrate');
         $this->newLine();
 
@@ -218,6 +227,29 @@ class SetupCommand extends Command
         }
 
         $this->info("  Published {$published} migration(s)");
+    }
+
+    private function checkDatabaseConnection(): bool
+    {
+        try {
+            DB::connection()->getPdo();
+
+            return true;
+        } catch (\Throwable $e) {
+            $this->error('  Database connection gagal: ' . $e->getMessage());
+
+            return false;
+        }
+    }
+
+    private function finishAdvanceSkipped(): int
+    {
+        $this->info('Setup selesai (advance mode) — migrate dilewati.');
+        $this->newLine();
+        $this->line('Setelah DB siap, jalankan: <info>php artisan migrate</info>');
+        $this->newLine();
+
+        return self::SUCCESS;
     }
 
     private function packagePath(string $relativePath): string

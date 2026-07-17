@@ -32,7 +32,7 @@ class LogAction
         ]);
 
         if ($this->useDatabase()) {
-            $this->storeLog($ip, 'block', $reason, $score, null, [
+            $this->storeLog($ip, 'block', $reason, $score, metadata: [
                 'threshold' => config('gupa.master.threshold', 100),
                 'block_duration' => config('gupa.master.block_duration', 3600),
             ]);
@@ -52,7 +52,7 @@ class LogAction
         ]);
 
         if ($this->useDatabase()) {
-            $this->storeLog($ip, 'permanent_block', $reason, 0, null, [
+            $this->storeLog($ip, 'permanent_block', $reason, 0, metadata: [
                 'block_count' => $blockCount,
             ]);
         }
