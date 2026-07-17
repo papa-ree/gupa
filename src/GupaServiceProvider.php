@@ -8,6 +8,8 @@ use Bale\Gupa\Actions\NotifyAction;
 use Bale\Gupa\Commands\BlacklistCommand;
 use Bale\Gupa\Commands\ClearScoreCommand;
 use Bale\Gupa\Commands\DashboardCommand;
+use Bale\Gupa\Commands\LogCommand;
+use Bale\Gupa\Commands\SetupCommand;
 use Bale\Gupa\Commands\StatsCommand;
 use Bale\Gupa\Commands\UnblockCommand;
 use Bale\Gupa\Commands\WhitelistCommand;
@@ -60,6 +62,10 @@ class GupaServiceProvider extends ServiceProvider
         $this->publishes([
             __DIR__ . '/../config/gupa.php' => config_path('gupa.php'),
         ], 'gupa:config');
+
+        $this->publishes([
+            __DIR__ . '/../database/migrations' => database_path('migrations'),
+        ], 'gupa:migrations');
     }
 
     private function registerViews(): void
@@ -93,12 +99,14 @@ class GupaServiceProvider extends ServiceProvider
     private function registerCommands(): void
     {
         $this->commands([
+            SetupCommand::class,
             UnblockCommand::class,
             StatsCommand::class,
             DashboardCommand::class,
             ClearScoreCommand::class,
             WhitelistCommand::class,
             BlacklistCommand::class,
+            LogCommand::class,
         ]);
     }
 }

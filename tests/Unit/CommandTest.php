@@ -7,6 +7,7 @@ it('runs dashboard command', function () {
     $this->artisan('gupa:dashboard')
         ->expectsTable(['Setting', 'Value'], [
             ['Enabled', 'Yes'],
+            ['Storage', 'Cache'],
             ['Threshold', 100],
             ['Block Duration', '3600s'],
         ])

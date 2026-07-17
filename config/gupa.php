@@ -23,6 +23,9 @@ return [
         'score_decay_window' => (int) env('GUPA_SCORE_DECAY_WINDOW', 300),
         'block_duration' => (int) env('GUPA_BLOCK_DURATION', 3600),
         'log_enabled' => (bool) env('GUPA_LOG_ENABLED', true),
+        'storage' => env('GUPA_STORAGE', 'cache'),
+        'suspicious_threshold' => (int) env('GUPA_SUSPICIOUS_THRESHOLD', 10),
+        'log_retention_days' => (int) env('GUPA_LOG_RETENTION_DAYS', 30),
     ],
 
     /*

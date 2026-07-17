@@ -2,6 +2,7 @@
 
 namespace Bale\Gupa\Commands;
 
+use Bale\Gupa\Models\BlockedIp as BlockedIpModel;
 use Bale\Gupa\Scorer\ScoreCalculator;
 use Bale\Gupa\Support\WhitelistChecker;
 use Illuminate\Console\Command;
@@ -15,13 +16,16 @@ class DashboardCommand extends Command
 
     public function handle(ScoreCalculator $scoreCalculator, WhitelistChecker $whitelistChecker): int
     {
-        $blockedCount = $this->countCacheKeys('gupa:blocked:*');
-        $pendingCount = $this->countCacheKeys('gupa:pending_block:*');
-        $permanentCount = $this->countCacheKeys('gupa:permanent:*');
+        $useDb = config('gupa.master.storage') === 'database';
+
+        $blockedCount = $useDb ? $this->countBlockedInDatabase() : $this->countCacheKeys('gupa:blocked:*');
+        $pendingCount = $useDb ? 0 : $this->countCacheKeys('gupa:pending_block:*');
+        $permanentCount = $useDb ? $this->countPermanentInDatabase() : $this->countCacheKeys('gupa:permanent:*');
         $scoreCount = $this->countCacheKeys('gupa:score:*');
 
         $data = [
             'enabled' => config('gupa.master.enabled', true),
+            'storage' => $useDb ? 'database' : 'cache',
             'threshold' => config('gupa.master.threshold', 100),
             'block_duration' => config('gupa.master.block_duration', 3600),
             'stats' => [
@@ -47,6 +51,7 @@ class DashboardCommand extends Command
 
         $this->table(['Setting', 'Value'], [
             ['Enabled', $data['enabled'] ? 'Yes' : 'No'],
+            ['Storage', ucfirst($data['storage'])],
             ['Threshold', $data['threshold']],
             ['Block Duration', $data['block_duration'] . 's'],
         ]);
@@ -75,6 +80,24 @@ class DashboardCommand extends Command
         $this->newLine();
 
         return self::SUCCESS;
+    }
+
+    private function countBlockedInDatabase(): int
+    {
+        try {
+            return BlockedIpModel::notExpired()->count();
+        } catch (\Throwable) {
+            return 0;
+        }
+    }
+
+    private function countPermanentInDatabase(): int
+    {
+        try {
+            return BlockedIpModel::where('is_permanent', true)->count();
+        } catch (\Throwable) {
+            return 0;
+        }
     }
 
     private function countCacheKeys(string $prefix): int
@@ -108,7 +131,6 @@ class DashboardCommand extends Command
     private function countViaStore(string $prefix): int
     {
         try {
-            $cache = Cache::store();
             $path = storage_path('framework/cache/data');
 
             if (!is_dir($path)) {

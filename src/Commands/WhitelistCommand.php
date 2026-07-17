@@ -34,6 +34,9 @@ class WhitelistCommand extends Command
         $whitelistChecker->whitelist($ip);
         $this->info("Added {$ip} to dynamic whitelist.");
 
+        $storage = config('gupa.master.storage') === 'database' ? 'database + cache' : 'cache';
+        $this->comment("  Storage: {$storage}");
+
         return self::SUCCESS;
     }
 

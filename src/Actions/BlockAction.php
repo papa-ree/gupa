@@ -2,6 +2,7 @@
 
 namespace Bale\Gupa\Actions;
 
+use Bale\Gupa\Models\BlockedIp as BlockedIpModel;
 use Bale\Gupa\Support\WhitelistChecker;
 use Illuminate\Support\Facades\Cache;
 
@@ -18,6 +19,10 @@ class BlockAction
 
     public function isBlocked(string $ip): bool
     {
+        if ($this->useDatabase()) {
+            return $this->isBlockedInDatabase($ip);
+        }
+
         return Cache::has(self::BLOCK_KEY_PREFIX . $ip)
             || Cache::has(self::PERMANENT_KEY_PREFIX . $ip);
     }
@@ -34,6 +39,10 @@ class BlockAction
             Cache::put(self::BLOCK_KEY_PREFIX . $ip, true, $duration);
         }
 
+        if ($this->useDatabase()) {
+            $this->storeInDatabase($ip, $permanent);
+        }
+
         $this->recordBlock($ip);
     }
 
@@ -43,6 +52,10 @@ class BlockAction
         Cache::forget(self::PENDING_KEY_PREFIX . $ip);
         Cache::forget(self::PERMANENT_KEY_PREFIX . $ip);
         Cache::forget(self::BLOCK_COUNT_KEY_PREFIX . $ip);
+
+        if ($this->useDatabase()) {
+            $this->removeFromDatabase($ip);
+        }
     }
 
     public function setPendingBlock(string $ip): void
@@ -81,5 +94,36 @@ class BlockAction
     public function resetBlockCount(string $ip): void
     {
         Cache::forget(self::BLOCK_COUNT_KEY_PREFIX . $ip);
+    }
+
+    private function useDatabase(): bool
+    {
+        return config('gupa.master.storage') === 'database';
+    }
+
+    private function isBlockedInDatabase(string $ip): bool
+    {
+        $query = BlockedIpModel::where('ip', $ip)->notExpired();
+
+        return $query->exists();
+    }
+
+    private function storeInDatabase(string $ip, bool $permanent): void
+    {
+        $duration = config('gupa.master.block_duration', 3600);
+
+        BlockedIpModel::updateOrCreate(
+            ['ip' => $ip],
+            [
+                'reason' => 'Score threshold exceeded',
+                'is_permanent' => $permanent,
+                'expires_at' => $permanent ? null : now()->addSeconds($duration),
+            ]
+        );
+    }
+
+    private function removeFromDatabase(string $ip): void
+    {
+        BlockedIpModel::where('ip', $ip)->delete();
     }
 }

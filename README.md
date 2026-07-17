@@ -11,8 +11,55 @@
 
 ```bash
 composer require bale/gupa
-php artisan vendor:publish --tag=gupa:config
+php artisan gupa:setup
 ```
+
+### Mode Setup
+
+**Auto (default)** — publish config + env vars minimal:
+
+```
+php artisan gupa:setup
+? Pilih mode instalasi:
+  > Auto (default)
+```
+
+**Advance** — auto + migrations + database storage:
+
+```
+php artisan gupa:setup
+? Pilih mode instalasi:
+  > Advance (database storage)
+```
+
+### Auto Mode
+
+Publishes config + adds minimal env vars:
+
+```
+GUPA_ENABLED=true
+GUPA_THRESHOLD=100
+GUPA_SCORE_DECAY_WINDOW=300
+GUPA_BLOCK_DURATION=3600
+GUPA_LOG_ENABLED=true
+```
+
+### Advance Mode
+
+Auto mode + migrations + database storage:
+
+```
+GUPA_ENABLED=true
+GUPA_STORAGE=database
+GUPA_THRESHOLD=100
+...
+```
+
+Publishes 4 migrations:
+- `gupa_blocked_ips` — IP blocking state
+- `gupa_logs` — audit trail
+- `gupa_whitelists` — dynamic whitelist
+- `gupa_blacklists` — dynamic blacklist
 
 ## Quick Start
 
@@ -29,6 +76,15 @@ GUPA_ENABLED=true
 ```
 
 Semua request otomatis diproteksi.
+
+## Storage Modes
+
+| Mode | Storage | Pros |
+|------|---------|------|
+| **cache** | Redis/file | Fast, zero DB overhead |
+| **database** | SQLite/MySQL | Persistent, survives cache flush |
+
+Switch via `GUPA_STORAGE=cache` or `GUPA_STORAGE=database`.
 
 ## Usage
 
