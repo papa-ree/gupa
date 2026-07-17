@@ -175,18 +175,75 @@ php artisan gupa:log --prune                # Hapus log lama
 php artisan gupa:log --json                 # Output JSON
 ```
 
-## Komponen Honeypot
+## Honeypot
+
+Gupa mendeteksi bot melalui 3 cara: field tersembunyi, exact route match, dan prefix path.
+
+### Field Tersembunyi
 
 Sembunyikan field jebakan di form Anda:
 
 ```blade
 <x-gupa::honeypot />
 
-{{-- Field name dan action custom --}}
+{{-- Custom field name --}}
 <x-gupa::honeypot fieldName="email_backup" action="{{ route('contact.store') }}" />
 ```
 
-Bot yang mengisi field tersembunyi akan mendapat skor secara otomatis.
+Bot yang mengisi field tersembunyi akan mendapat skor 50.
+
+### Routes (Exact Match)
+
+Salah satu segment path harus sama persis. Cocok untuk halaman admin atau endpoint yang jarang diakses user normal.
+
+```php
+// config/gupa.php
+'honeypot' => [
+    'routes' => ['wp-login.php', 'xmlrpc.php'],
+],
+```
+
+| Request | Terdeteksi? | Alasan |
+|---------|-------------|--------|
+| `/wp-login.php` | ✓ | segment `wp-login.php` match |
+| `/2023/wp-login.php` | ✓ | segment `wp-login.php` match |
+| `/sub/wp-login.php/x` | ✓ | segment `wp-login.php` match |
+| `/wp-login` | ✗ | `wp-login` ≠ `wp-login.php` |
+| `/login` | ✗ | tidak ada segment yang match |
+
+### Prefixes (Awalan Segment)
+
+Salah satu segment path harus diawali string tertentu. Cocok untuk memblokir seluruh grup path.
+
+```php
+// config/gupa.php
+'honeypot' => [
+    'prefixes' => ['wp-', 'wpv-'],
+],
+```
+
+| Request | Terdeteksi? | Alasan |
+|---------|-------------|--------|
+| `/wp-admin.php` | ✓ | segment `wp-admin.php` diawali `wp-` |
+| `/2023/wp-login.php` | ✓ | segment `wp-login.php` diawali `wp-` |
+| `/wp-content/uploads/x` | ✓ | segment `wp-content` diawali `wp-` |
+| `/wpv-view/123` | ✓ | segment `wpv-view` diawali `wpv-` |
+| `/admin` | ✗ | tidak ada segment yang diawali `wp-` |
+| `/login` | ✗ | tidak ada segment yang diawali `wp-` |
+
+### Gabungan Routes + Prefixes
+
+Keduanya dicek secara bersamaan, skor tetap sama.
+
+```php
+'honeypot' => [
+    'routes' => ['xmlrpc.php', 'wp-login.php'],
+    'prefixes' => ['wp-', 'wpv-'],
+    'score' => 50,
+],
+```
+
+Semua request ke path yang match akan mendapat skor 50, apakah dari `routes` maupun `prefixes`.
 
 ## Coba Sendiri
 

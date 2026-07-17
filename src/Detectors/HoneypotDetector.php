@@ -16,12 +16,17 @@ class HoneypotDetector implements DetectorInterface
 
         $honeypotField = config('gupa.detectors.honeypot.field_name', 'website_url');
         $honeypotRoutes = config('gupa.detectors.honeypot.routes', []);
+        $honeypotPrefixes = config('gupa.detectors.honeypot.prefixes', []);
 
         if ($this->isHoneypotFieldFilled($request, $honeypotField)) {
             return $score;
         }
 
         if ($this->isHoneypotRoute($request, $honeypotRoutes)) {
+            return $score;
+        }
+
+        if ($this->matchesHoneypotPrefix($request, $honeypotPrefixes)) {
             return $score;
         }
 
@@ -41,9 +46,34 @@ class HoneypotDetector implements DetectorInterface
             return false;
         }
 
-        $path = $request->path();
+        $segments = explode('/', $request->path());
 
-        return in_array($path, $honeypotRoutes, true);
+        foreach ($segments as $segment) {
+            if (in_array($segment, $honeypotRoutes, true)) {
+                return true;
+            }
+        }
+
+        return false;
+    }
+
+    private function matchesHoneypotPrefix(Request $request, array $prefixes): bool
+    {
+        if (empty($prefixes)) {
+            return false;
+        }
+
+        $segments = explode('/', $request->path());
+
+        foreach ($segments as $segment) {
+            foreach ($prefixes as $prefix) {
+                if (str_starts_with($segment, $prefix)) {
+                    return true;
+                }
+            }
+        }
+
+        return false;
     }
 
     public function isEnabled(): bool

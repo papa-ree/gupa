@@ -81,11 +81,35 @@ return [
 
         /*
         | Honeypot: Deteksi bot yang mengisi field tersembunyi atau akses route tersembunyi.
+        |
+        | routes   — exact match: salah satu segment path harus sama persis
+        | prefixes — awalan: salah satu segment path harus diawali string ini
+        |
+        | Keduanya dicek per-segment (pisah '/'), bukan terhadap path utuh.
+        |
+        | Contoh routes (exact match per segment):
+        |   'routes' => ['wp-login.php', 'xmlrpc.php']
+        |   → /wp-login.php        ✓ terdeteksi (segment 'wp-login.php' match)
+        |   → /2023/wp-login.php   ✓ terdeteksi (segment 'wp-login.php' match)
+        |   → /sub/wp-login/x      ✓ terdeteksi (segment 'wp-login.php' match)
+        |   → /wp-login            ✗ tidak (segment 'wp-login' ≠ 'wp-login.php')
+        |   → /login               ✗ tidak
+        |
+        | Contoh prefixes (awalan per segment):
+        |   'prefixes' => ['wp-', 'wpv-']
+        |   → /wp-admin.php        ✓ terdeteksi (segment 'wp-admin.php' diawali 'wp-')
+        |   → /2023/wp-login.php   ✓ terdeteksi (segment 'wp-login.php' diawali 'wp-')
+        |   → /wpv-view/123        ✓ terdeteksi (segment 'wpv-view' diawali 'wpv-')
+        |   → /admin               ✗ tidak
+        |   → /wp-admin-old        ✓ terdeteksi (segment 'wp-admin-old' diawali 'wp-')
+        |
+        | Gabungan routes + prefixes keduanya dicek, skor sama.
         */
         'honeypot' => [
             'enabled' => (bool) env('GUPA_HONEYPOT_ENABLED', true),
             'field_name' => env('GUPA_HONEYPOT_FIELD', 'website_url'),
             'routes' => [],
+            'prefixes' => ['wp-'],
             'score' => (int) env('GUPA_HONEYPOT_SCORE', 50),
         ],
 
