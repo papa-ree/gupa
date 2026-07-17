@@ -29,46 +29,54 @@ class WhitelistChecker
 
     public function whitelist(string $ip): void
     {
+        if ($this->useDatabase()) {
+            $this->storeWhitelistInDatabase($ip);
+
+            return;
+        }
+
         $ips = Cache::get(self::WHITELIST_CACHE_KEY, []);
         $ips[$ip] = true;
         Cache::forever(self::WHITELIST_CACHE_KEY, $ips);
-
-        if ($this->useDatabase()) {
-            $this->storeWhitelistInDatabase($ip);
-        }
     }
 
     public function unwhitelist(string $ip): void
     {
+        if ($this->useDatabase()) {
+            $this->removeWhitelistFromDatabase($ip);
+
+            return;
+        }
+
         $ips = Cache::get(self::WHITELIST_CACHE_KEY, []);
         unset($ips[$ip]);
         Cache::forever(self::WHITELIST_CACHE_KEY, $ips);
-
-        if ($this->useDatabase()) {
-            $this->removeWhitelistFromDatabase($ip);
-        }
     }
 
     public function blacklist(string $ip): void
     {
+        if ($this->useDatabase()) {
+            $this->storeBlacklistInDatabase($ip);
+
+            return;
+        }
+
         $ips = Cache::get(self::BLACKLIST_CACHE_KEY, []);
         $ips[$ip] = true;
         Cache::forever(self::BLACKLIST_CACHE_KEY, $ips);
-
-        if ($this->useDatabase()) {
-            $this->storeBlacklistInDatabase($ip);
-        }
     }
 
     public function unblacklist(string $ip): void
     {
+        if ($this->useDatabase()) {
+            $this->removeBlacklistFromDatabase($ip);
+
+            return;
+        }
+
         $ips = Cache::get(self::BLACKLIST_CACHE_KEY, []);
         unset($ips[$ip]);
         Cache::forever(self::BLACKLIST_CACHE_KEY, $ips);
-
-        if ($this->useDatabase()) {
-            $this->removeBlacklistFromDatabase($ip);
-        }
     }
 
     public function getWhitelistedIps(): array
@@ -156,13 +164,16 @@ class WhitelistChecker
     private function getWhitelistIps(): array
     {
         $configIps = config('gupa.whitelist.ips', []);
-        $dynamicIps = Cache::get(self::WHITELIST_CACHE_KEY, []);
 
-        if ($this->useDatabase() && empty($dynamicIps)) {
+        if ($this->useDatabase()) {
             $dynamicIps = \Bale\Gupa\Models\Whitelist::pluck('ip')
                 ->flip()
                 ->toArray();
+
+            return array_merge(array_flip($configIps), $dynamicIps);
         }
+
+        $dynamicIps = Cache::get(self::WHITELIST_CACHE_KEY, []);
 
         return array_merge(array_flip($configIps), $dynamicIps);
     }
@@ -170,13 +181,16 @@ class WhitelistChecker
     private function getBlacklistIps(): array
     {
         $configIps = config('gupa.blacklist.ips', []);
-        $dynamicIps = Cache::get(self::BLACKLIST_CACHE_KEY, []);
 
-        if ($this->useDatabase() && empty($dynamicIps)) {
+        if ($this->useDatabase()) {
             $dynamicIps = \Bale\Gupa\Models\Blacklist::pluck('ip')
                 ->flip()
                 ->toArray();
+
+            return array_merge(array_flip($configIps), $dynamicIps);
         }
+
+        $dynamicIps = Cache::get(self::BLACKLIST_CACHE_KEY, []);
 
         return array_merge(array_flip($configIps), $dynamicIps);
     }

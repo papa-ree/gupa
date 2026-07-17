@@ -18,8 +18,8 @@ afterEach(function () {
     config()->set('gupa.master.storage', 'cache');
 });
 
-describe('BlockAction — database mode', function () {
-    it('blocks IP in database', function () {
+describe('BlockAction — database mode (pure DB, no cache)', function () {
+    it('blocks IP in database without writing to cache', function () {
         $blockAction = app(BlockAction::class);
 
         $blockAction->execute('10.0.0.1');
@@ -28,9 +28,12 @@ describe('BlockAction — database mode', function () {
         expect($blocked)->not->toBeNull();
         expect($blocked->is_permanent)->toBeFalse();
         expect($blocked->expires_at)->not->toBeNull();
+
+        expect(Cache::has('gupa:blocked:10.0.0.1'))->toBeFalse();
+        expect(Cache::has('gupa:permanent:10.0.0.1'))->toBeFalse();
     });
 
-    it('blocks IP permanently in database', function () {
+    it('blocks IP permanently in database without cache', function () {
         $blockAction = app(BlockAction::class);
 
         $blockAction->execute('10.0.0.1', permanent: true);
@@ -39,6 +42,9 @@ describe('BlockAction — database mode', function () {
         expect($blocked)->not->toBeNull();
         expect($blocked->is_permanent)->toBeTrue();
         expect($blocked->expires_at)->toBeNull();
+
+        expect(Cache::has('gupa:blocked:10.0.0.1'))->toBeFalse();
+        expect(Cache::has('gupa:permanent:10.0.0.1'))->toBeFalse();
     });
 
     it('checks blocked IP from database', function () {
@@ -67,7 +73,7 @@ describe('BlockAction — database mode', function () {
         expect($blockAction->isBlocked('10.0.0.60'))->toBeFalse();
     });
 
-    it('unblocks IP from database', function () {
+    it('unblocks IP from database without cache', function () {
         BlockedIp::create([
             'ip' => '10.0.0.70',
             'reason' => 'test block',
@@ -79,6 +85,11 @@ describe('BlockAction — database mode', function () {
         $blockAction->unblock('10.0.0.70');
 
         expect(BlockedIp::where('ip', '10.0.0.70')->exists())->toBeFalse();
+
+        expect(Cache::has('gupa:blocked:10.0.0.70'))->toBeFalse();
+        expect(Cache::has('gupa:pending_block:10.0.0.70'))->toBeFalse();
+        expect(Cache::has('gupa:permanent:10.0.0.70'))->toBeFalse();
+        expect(Cache::has('gupa:block_count:10.0.0.70'))->toBeFalse();
     });
 
     it('updates existing database entry on re-block', function () {
@@ -95,6 +106,64 @@ describe('BlockAction — database mode', function () {
         $blocked = BlockedIp::where('ip', '10.0.0.90')->first();
         expect($blocked->is_permanent)->toBeTrue();
         expect($blocked->expires_at)->toBeNull();
+    });
+
+    it('sets and detects pending block in database', function () {
+        $blockAction = app(BlockAction::class);
+
+        $blockAction->setPendingBlock('10.0.0.1');
+
+        expect($blockAction->hasPendingBlock('10.0.0.1'))->toBeTrue();
+        expect($blockAction->isBlocked('10.0.0.1'))->toBeFalse();
+
+        $pending = BlockedIp::where('ip', '10.0.0.1')->where('reason', 'pending')->first();
+        expect($pending)->not->toBeNull();
+    });
+
+    it('applies pending block from database', function () {
+        $blockAction = app(BlockAction::class);
+
+        $blockAction->setPendingBlock('10.0.0.1');
+        expect($blockAction->hasPendingBlock('10.0.0.1'))->toBeTrue();
+
+        $blockAction->applyPendingBlock('10.0.0.1');
+
+        expect($blockAction->hasPendingBlock('10.0.0.1'))->toBeFalse();
+        expect($blockAction->isBlocked('10.0.0.1'))->toBeTrue();
+
+        $pending = BlockedIp::where('ip', '10.0.0.1')->where('reason', 'pending')->first();
+        expect($pending)->toBeNull();
+    });
+
+    it('tracks block count from logs table', function () {
+        $blockAction = app(BlockAction::class);
+
+        expect($blockAction->getBlockCount('10.0.0.1'))->toBe(0);
+
+        Log::create([
+            'ip' => '10.0.0.1',
+            'event' => 'block',
+            'reason' => 'test',
+            'score' => 80,
+        ]);
+
+        expect($blockAction->getBlockCount('10.0.0.1'))->toBe(1);
+    });
+
+    it('does not write any cache keys for block operations', function () {
+        $blockAction = app(BlockAction::class);
+
+        Cache::flush();
+
+        $blockAction->execute('10.0.0.1');
+        $blockAction->setPendingBlock('10.0.0.1');
+
+        $allCacheKeys = Cache::getStore()->getPrefix();
+
+        expect(Cache::has('gupa:blocked:10.0.0.1'))->toBeFalse();
+        expect(Cache::has('gupa:pending_block:10.0.0.1'))->toBeFalse();
+        expect(Cache::has('gupa:permanent:10.0.0.1'))->toBeFalse();
+        expect(Cache::has('gupa:block_count:10.0.0.1'))->toBeFalse();
     });
 });
 
@@ -129,8 +198,8 @@ describe('LogAction — database mode', function () {
     });
 });
 
-describe('WhitelistChecker — database mode', function () {
-    it('stores whitelist in database', function () {
+describe('WhitelistChecker — database mode (pure DB, no cache)', function () {
+    it('stores whitelist in database without cache', function () {
         config()->set('gupa.whitelist.enabled', true);
         config()->set('gupa.whitelist.ips', []);
 
@@ -138,9 +207,12 @@ describe('WhitelistChecker — database mode', function () {
         $checker->whitelist('10.0.0.99');
 
         expect(Whitelist::where('ip', '10.0.0.99')->exists())->toBeTrue();
+
+        $cacheIps = Cache::get('gupa:whitelist', []);
+        expect(isset($cacheIps['10.0.0.99']))->toBeFalse();
     });
 
-    it('removes whitelist from database', function () {
+    it('removes whitelist from database without cache', function () {
         config()->set('gupa.whitelist.enabled', true);
         config()->set('gupa.whitelist.ips', []);
 
@@ -151,7 +223,7 @@ describe('WhitelistChecker — database mode', function () {
         expect(Whitelist::where('ip', '10.0.0.99')->exists())->toBeFalse();
     });
 
-    it('stores blacklist in database', function () {
+    it('stores blacklist in database without cache', function () {
         config()->set('gupa.blacklist.enabled', true);
         config()->set('gupa.blacklist.ips', []);
 
@@ -159,9 +231,12 @@ describe('WhitelistChecker — database mode', function () {
         $checker->blacklist('10.0.0.99');
 
         expect(Blacklist::where('ip', '10.0.0.99')->exists())->toBeTrue();
+
+        $cacheIps = Cache::get('gupa:blacklist', []);
+        expect(isset($cacheIps['10.0.0.99']))->toBeFalse();
     });
 
-    it('removes blacklist from database', function () {
+    it('removes blacklist from database without cache', function () {
         config()->set('gupa.blacklist.enabled', true);
         config()->set('gupa.blacklist.ips', []);
 
@@ -170,6 +245,41 @@ describe('WhitelistChecker — database mode', function () {
         $checker->unblacklist('10.0.0.99');
 
         expect(Blacklist::where('ip', '10.0.0.99')->exists())->toBeFalse();
+    });
+
+    it('reads whitelist directly from database', function () {
+        config()->set('gupa.whitelist.enabled', true);
+        config()->set('gupa.whitelist.ips', []);
+
+        $checker = app(WhitelistChecker::class);
+        $checker->whitelist('10.0.0.50');
+
+        expect($checker->isWhitelisted('10.0.0.50'))->toBeTrue();
+        expect($checker->isWhitelisted('10.0.0.51'))->toBeFalse();
+    });
+
+    it('reads blacklist directly from database', function () {
+        config()->set('gupa.blacklist.enabled', true);
+        config()->set('gupa.blacklist.ips', []);
+
+        $checker = app(WhitelistChecker::class);
+        $checker->blacklist('10.0.0.50');
+
+        expect($checker->isBlacklisted('10.0.0.50'))->toBeTrue();
+        expect($checker->isBlacklisted('10.0.0.51'))->toBeFalse();
+    });
+
+    it('returns whitelist IPs from database', function () {
+        config()->set('gupa.whitelist.enabled', true);
+        config()->set('gupa.whitelist.ips', ['1.2.3.4']);
+
+        Whitelist::create(['ip' => '10.0.0.99']);
+
+        $checker = app(WhitelistChecker::class);
+        $ips = $checker->getWhitelistedIps();
+
+        expect($ips)->toContain('1.2.3.4');
+        expect($ips)->toContain('10.0.0.99');
     });
 });
 

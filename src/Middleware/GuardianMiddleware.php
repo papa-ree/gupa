@@ -6,7 +6,6 @@ use Bale\Gupa\Actions\BlockAction;
 use Bale\Gupa\Actions\LogAction;
 use Bale\Gupa\Actions\NotifyAction;
 use Bale\Gupa\Detectors\NotFoundDetector;
-use Bale\Gupa\Models\BlockedIp as BlockedIpModel;
 use Bale\Gupa\Scorer\ScoreCalculator;
 use Bale\Gupa\Support\WhitelistChecker;
 use Closure;
@@ -45,12 +44,6 @@ class GuardianMiddleware
 
         if ($this->blockAction->isBlocked($ip)) {
             return $this->blockedResponse($ip, 'already blocked');
-        }
-
-        if ($this->useDatabase() && !$this->blockAction->isBlocked($ip)) {
-            if ($this->syncBlockedFromDatabase($ip)) {
-                return $this->blockedResponse($ip, 'already blocked (synced from database)');
-            }
         }
 
         if ($this->blockAction->hasPendingBlock($ip)) {
@@ -168,35 +161,5 @@ class GuardianMiddleware
     private function isEnabled(): bool
     {
         return (bool) config('gupa.master.enabled', true);
-    }
-
-    private function useDatabase(): bool
-    {
-        return config('gupa.master.storage') === 'database';
-    }
-
-    private function syncBlockedFromDatabase(string $ip): bool
-    {
-        try {
-            $blocked = BlockedIpModel::where('ip', $ip)->notExpired()->first();
-
-            if (!$blocked) {
-                return false;
-            }
-
-            if ($blocked->is_permanent) {
-                Cache::forever('gupa:blocked:' . $ip, true);
-                Cache::forever('gupa:permanent:' . $ip, true);
-            } else {
-                $remaining = $blocked->expires_at->diffInSeconds(now());
-                if ($remaining > 0) {
-                    Cache::put('gupa:blocked:' . $ip, true, $remaining);
-                }
-            }
-
-            return true;
-        } catch (\Throwable) {
-            return false;
-        }
     }
 }
