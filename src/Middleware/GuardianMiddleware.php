@@ -108,7 +108,7 @@ class GuardianMiddleware
     private function executeBlock(string $ip, int $score): void
     {
         $blockCount = $this->blockAction->getBlockCount($ip);
-        $maxBlocks = 3;
+        $maxBlocks = (int) config('gupa.master.recidivist_threshold', 3);
         $isRecidivist = $blockCount >= $maxBlocks;
 
         if ($isRecidivist) {

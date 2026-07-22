@@ -119,7 +119,7 @@ class BlockAction
         }
 
         $key = self::BLOCK_COUNT_KEY_PREFIX . $ip;
-        $window = 86400;
+        $window = config('gupa.master.recidivist_days', 1) * 86400;
 
         $count = Cache::get($key, 0);
         Cache::put($key, $count + 1, $window);
@@ -158,9 +158,11 @@ class BlockAction
 
     private function getBlockCountFromDatabase(string $ip): int
     {
+        $days = config('gupa.master.recidivist_days', 1);
+
         return LogModel::where('ip', $ip)
             ->whereIn('event', ['block', 'permanent_block'])
-            ->where('created_at', '>=', now()->subDay())
+            ->where('created_at', '>=', now()->subDays($days))
             ->count();
     }
 

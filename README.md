@@ -94,6 +94,10 @@ GUPA_LOG_ENABLED=true
 # Storage
 GUPA_STORAGE=cache              # "cache" atau "database"
 
+# Recidivist (permanent block setelah N block dalam M hari)
+GUPA_RECIDIVIST_DAYS=1          # Jendela waktu dalam hari (default: 1)
+GUPA_RECIDIVIST_THRESHOLD=3     # Jumlah block maks sebelum permanent (default: 3)
+
 # Logging path mencurigakan (hanya database mode)
 GUPA_SUSPICIOUS_THRESHOLD=10    # Log request saat skor mencapai ini
 GUPA_LOG_RETENTION_DAYS=30      # Auto-prune log lebih lama dari ini

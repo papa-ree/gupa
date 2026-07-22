@@ -26,6 +26,8 @@ return [
         'storage' => env('GUPA_STORAGE', 'cache'),
         'suspicious_threshold' => (int) env('GUPA_SUSPICIOUS_THRESHOLD', 10),
         'log_retention_days' => (int) env('GUPA_LOG_RETENTION_DAYS', 30),
+        'recidivist_days' => (int) env('GUPA_RECIDIVIST_DAYS', 1),
+        'recidivist_threshold' => (int) env('GUPA_RECIDIVIST_THRESHOLD', 3),
     ],
 
     /*

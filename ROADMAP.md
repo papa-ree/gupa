@@ -15,4 +15,4 @@
 - **Notifikasi** — Alert webhook dan email saat IP diblokir/diunblock
 - **Dashboard & CLI** — `gupa:dashboard`, `gupa:stats`, `gupa:log`, dan manajemen IP lainnya
 - **Honeypot** — Field tersembunyi, exact route match, dan prefix path matching
-- **Recidivist Detection** — IP yang ≥3x diblokir dalam 24 jam otomatis permanent block
+- **Recidivist Detection** — IP yang ≥3x diblokir dalam 24 jam otomatis permanent block (bisa diatur: `GUPA_RECIDIVIST_DAYS`, `GUPA_RECIDIVIST_THRESHOLD`)
